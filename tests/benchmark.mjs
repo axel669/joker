@@ -2,42 +2,28 @@ import fs from "fs/promises"
 
 import bench from "benchmark"
 
-import { validator } from "../joker.mjs"
+import joker from "../joker.mjs"
 import AJV from "ajv"
 
 const suite = new bench.Suite()
 
 const schema = {
     "root[?]": {
-        "_id": "string",
-        "?index": "number",
-        "guid": "string",
-        "isActive": "bool",
-        "age": "number",
-        "eyeColor": "string",
-        "name": "string",
-        "gender": "string",
-        "latitude": "number",
-        "longitude": "number",
-        "tags[]": "string",
-        "favoriteFruit": "string"
+        "_id": joker.string(),
+        "?index": joker.number(),
+        "guid": joker.string(),
+        "isActive": joker.bool(),
+        "age": joker.number(),
+        "eyeColor": joker.string(),
+        "name": joker.string(),
+        "gender": joker.string(),
+        "latitude": joker.number(),
+        "longitude": joker.number(),
+        "tags[]": joker.string(),
+        "favoriteFruit": joker.string()
     }
 }
-const data = JSON.parse(
-    await fs.readFile("tests/big.json", "utf8")
-)
-// const data = {
-//     id: 100,
-//     wat: [
-//         { name: "hi", count: "0" },
-//         { name: "test", count: 10 },
-//         { name: "another one", count: 0 },
-//     ]
-// }
-const validate = validator(schema)
-
-const ajv = new AJV()
-const validate2 = ajv.compile({
+const ajvSchema = {
     type: "array",
     items: {
         type: "object",
@@ -59,7 +45,23 @@ const validate2 = ajv.compile({
             "favoriteFruit": { type: "string" },
         }
     }
-})
+}
+
+const data = JSON.parse(
+    await fs.readFile("tests/big.json", "utf8")
+)
+// const data = {
+//     id: 100,
+//     wat: [
+//         { name: "hi", count: "0" },
+//         { name: "test", count: 10 },
+//         { name: "another one", count: 0 },
+//     ]
+// }
+const validate = joker.compile(schema)
+
+const ajv = new AJV()
+const validate2 = ajv.compile(ajvSchema)
 
 // console.log(JSON.stringify(data).length)
 
@@ -78,7 +80,16 @@ if (valid.includes(false) === true) {
 // console.log(validate2)
 
 suite.add(
-    "joker - reuse",
+    "joker - compile",
+    () => joker.compile(schema)
+)
+suite.add(
+    "ajv - compile",
+    () => ajv.compile(ajvSchema)
+)
+
+suite.add(
+    "joker",
     () => validate(data)
 )
 suite.add(

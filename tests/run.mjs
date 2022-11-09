@@ -1,6 +1,6 @@
 import fs from "fs/promises"
 
-import { validator } from "../joker.mjs"
+import joker from "../joker.mjs"
 
 import AJV from "ajv"
 const ajv = new AJV()
@@ -45,10 +45,10 @@ const data = [{
 {
     const schema = {
         root: {
-            "id": "number",
+            "id": joker.int(),
             "wat[]": {
-                "name": "string",
-                "count": "number",
+                "name": joker.string(),
+                "count": joker.number({max: 5}),
             }
         }
     }
@@ -60,7 +60,7 @@ const data = [{
             { name: "another one", count: 0 },
         ]
     }
-    const validate = validator(schema)
+    const validate = joker.compile(schema)
 
     console.log(data)
     console.log(validate.toString())

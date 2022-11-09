@@ -1,9 +1,5 @@
-const check = {
-    "number": (name) => `typeof ${name} !== "number"`,
-    "string": (name) => `typeof ${name} !== "string"`,
-    "bool": (name) => `typeof ${name} !== "boolean"`,
-    "int": (name) => `typeof ${name} !== "number" && (${name} % 1) !== 0`
-}
+import { builtin, buildType } from "./types.mjs"
+
 const nullable = (opt, name) =>
     (opt === true)
         ? `${name} !== null && ${name} !== undefined && `
@@ -44,7 +40,7 @@ const codify = (itemName, schema, path) => {
             return codifyArray(name, schema, path)
         }
         return [
-            `if (${nil}${check[schema.type](name)}) { errors.push(\`${path.join("")} is not a ${schema.type}\`) }`
+            `if (${nil}${schema.type(name)}) { errors.push(\`${path.join("")} is not a ${schema.type.typeName}\`) }`
         ]
     }
 
@@ -88,7 +84,12 @@ const transform = (schema, name) => {
 const funcHeader = `
 const errors = []
 `
-const compile = (schema) => {
+
+const compiledCache = new Map()
+const compile = (schema, cache = true) => {
+    if (compiledCache.has(schema) === true) {
+        return compiledCache.get(schema)
+    }
     const rootName = Object.keys(schema).find(key => key.startsWith("root"))
     const longSchema = transform(
         schema[rootName],
@@ -97,8 +98,18 @@ const compile = (schema) => {
 
     longSchema.name = ""
     const code = codify("item", longSchema, [])
+    const validator = new Function("item", `${funcHeader}${code.join("\n")}\nreturn errors.length ? errors : true`)
 
-    return new Function("item", `${funcHeader}${code.join("\n")}\nreturn errors.length ? errors : true`)
+    if (cache === false) {
+        return validator
+    }
+
+    compiledCache.set(schema, validator)
+    return validator
 }
 
-export default { compile }
+export default {
+    compile,
+    buildType,
+    ...builtin,
+}
