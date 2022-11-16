@@ -11,35 +11,56 @@ const varname = (varname) => {
 const nullable = (optional, name, core) => {
     if (optional === true) {
         return [
-            `if (empty(${name}) === false) {`,
+            `if (${name} !== null && ${name} !== undefined) {`,
             ...core,
             `}`
         ]
     }
     return core
 }
+const wat = (type, sub, args) => {
+    const f = builtin[type][sub]
+    if (typeof f === "function") {
+        if (args === undefined) {
+            return [`${type}.${sub}`]
+        }
+        return [`${type}.${sub}`, JSON.stringify(args)]
+    }
+    return { expr: f, args }
+}
+const wat2 = (thing, name) => {
+    if (thing.expr !== undefined) {
+        return `(${thing.expr})`
+            .replace(/\$item/g, name)
+            .replace(/\$value/g, JSON.stringify(thing.args))
+    }
+    const [func, value] = thing
+    if (value === undefined) {
+        return `${fname(func)}(${name})`
+    }
+    return `${fname(func)}(${name}, ${value})`
+}
 const $if = (name, path, optional, type, typeargs, closure) => {
     const funcs = [
-        [`${type}.$`],
+        wat(type, "$"),
         ...Object.keys(typeargs).map(
-            (key) => [
-                `${type}.${key}`,
-                JSON.stringify(typeargs[key])
-            ]
+            (key) => wat(type, key, typeargs[key])
         )
     ]
     funcs.forEach(
-        (key) => closure[key[0]] = true
+        (key) => {
+            if (Array.isArray(key) === false) {
+                return
+            }
+            closure[key[0]] = true
+        }
     )
     const condition = funcs.map(
-        ([func, value]) =>
-            (value === undefined)
-                ? `${fname(func)}(${name})`
-                : `${fname(func)}(${name}, ${value})`
+        (cond) => wat2(cond, name)
     )
     const args = funcs.length > 1 ? JSON.stringify(typeargs) : ""
     const core = [
-        `if ((${condition.join(" && ")}) === false) {`,
+        `if (${condition.join(" || ")}) {`,
         `errors.push(\`item${path.join("")} failed validation: ${type}${args}\`)`,
         `}`,
     ]
@@ -54,9 +75,8 @@ const codifyArray = (itemName, info, path, closure) => {
         `}`,
         `else {`,
         `for (let source = ${itemName}, ${index} = 0; ${index} < source.length; ${index} += 1) {`,
-        `const ${loopName} = source[${index}]`,
         ...codify(
-            loopName,
+            `source[${index}]`,
             {
                 array: false,
                 type: info.type,
@@ -75,12 +95,13 @@ const codifyArray = (itemName, info, path, closure) => {
 const codify = (itemName, info, path, closure) => {
     const { "joker.type": type, ...typeargs } = info.type
     const name = `${itemName}${info.name}`
-    if (type !== "object") {
-        return $if(name, path, info.optional, type, typeargs, closure)
-    }
 
     if (info.array === true) {
         return codifyArray(name, info, path, closure)
+    }
+
+    if (type !== "object") {
+        return $if(name, path, info.optional, type, typeargs, closure)
     }
 
     const nextName = varname("item")
@@ -113,11 +134,10 @@ const validator = (schema) => {
 
     const closure = {}
     const body = codify("item", typeInfo, [], closure)
-    const code = [
+    const { lines } = [
         ...Object.keys(closure).map(
             (name) => `const ${fname(name)} = types.${name}`
         ),
-        `const empty = (item) => item === null || item === undefined`,
         `return (item) => {`,
         `const errors = []`,
         ...body,
@@ -134,9 +154,10 @@ const validator = (schema) => {
             return { indent, lines }
         },
         { lines: [], indent: "" }
-    ).lines
+    )
+    const code = lines.join("\n")
 
-    const validate = new Function("types", code.join("\n"))(builtin)
+    const validate = new Function("types", code)(builtin)
     validate.code = code
     validate.schema = schema
     return validate
