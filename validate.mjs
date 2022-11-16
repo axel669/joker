@@ -23,23 +23,23 @@ const typeForm = (type, sub, args) => {
     const f = builtin[type][sub]
     if (typeof f === "function") {
         if (args === undefined) {
-            return [`${type}.${sub}`]
+            return [`${type}.${sub}`, f]
         }
-        return [`${type}.${sub}`, JSON.stringify(args)]
+        return [`${type}.${sub}`, f, varname("args"), args]
     }
     return { expr: f, args }
 }
 const validationExpr = (thing, name) => {
-    if (thing.expr !== undefined) {
-        return `(${thing.expr})`
-            .replace(/\$item/g, name)
-            .replace(/\$value/g, JSON.stringify(thing.args))
-    }
-    const [func, value] = thing
-    if (value === undefined) {
+    // if (thing.expr !== undefined) {
+    //     return `(${thing.expr})`
+    //         .replace(/\$item/g, name)
+    //         .replace(/\$value/g, JSON.stringify(thing.args))
+    // }
+    const [func, , argname] = thing
+    if (argname === undefined) {
         return `${fname(func)}(${name})`
     }
-    return `${fname(func)}(${name}, ${value})`
+    return `${fname(func)}(${name}, ${argname})`
 }
 const $if = (name, path, optional, type, typeargs, closure) => {
     const funcs = [
@@ -49,11 +49,15 @@ const $if = (name, path, optional, type, typeargs, closure) => {
         )
     ]
     funcs.forEach(
-        (key) => {
-            if (Array.isArray(key) === false) {
+        ([key, value, argname, args]) => {
+            // if (Array.isArray(key) === false) {
+            //     return
+            // }
+            closure[key] = value
+            if (args === undefined) {
                 return
             }
-            closure[key[0]] = true
+            closure[argname] = args
         }
     )
     const condition = funcs.map(
@@ -85,7 +89,7 @@ const codifyArray = (itemName, info, path, closure) => {
                 optional: info.itemOptional,
                 props: info.props,
             },
-            [...path, `.\${${index}}`],
+            [...path, `[\${${index}}]`],
             closure
         ),
         `}`,
@@ -139,6 +143,8 @@ const codify = (itemName, info, path, closure) => {
     ]
     return nullable(info.optional, itemName, core)
 }
+const closureExpr = ([name, value]) => {
+}
 const validator = (schema) => {
     const rootName = Object.keys(schema).find(
         key => key.startsWith("root") || key.startsWith("?root")
@@ -149,11 +155,14 @@ const validator = (schema) => {
     const closure = {}
     const body = codify("item", typeInfo, [], closure)
     const { lines } = [
-        ...Object.entries(closure).map(
-            ([name, value]) =>
-                (typeof value === "function")
-                ? `const ${fname(name)} = condition.${name}`
-                : `const ${fname(name)} = types.${name}`
+        // ...Object.entries(closure).map(
+        //     ([name, value]) =>
+        //         (typeof value === "function")
+        //         ? `const ${fname(name)} = types.${name}`
+        //         : `const ${fname(name)} = closure.${name}`
+        // ),
+        ...Object.keys(closure).map(
+            (name) => `const ${fname(name)} = closure["${name}"]`
         ),
         `return (item) => {`,
         `const errors = []`,
@@ -174,13 +183,14 @@ const validator = (schema) => {
     )
     const code = lines.join("\n")
 
-    const condition = Object.fromEntries(
-        Object.entries(closure)
-            .filter(
-                ([, value]) => typeof value === "function"
-            )
-    )
-    const validate = new Function("types", "condition", code)(builtin, condition)
+    // const condition = Object.fromEntries(
+    //     Object.entries(closure)
+    //         .filter(
+    //             ([, value]) => typeof value !== "boolean"
+    //         )
+    // )
+    console.log(closure)
+    const validate = new Function("types", "closure", code)(builtin, closure)
     validate.code = code
     validate.schema = schema
     return validate

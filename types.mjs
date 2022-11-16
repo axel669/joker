@@ -10,6 +10,7 @@ const builtin = {
         min: (item, value) => item.length < value,
         max: (item, value) => item.length > value,
         length: (item, value) => item.length !== value,
+        format: (item, regex) => regex.test(item)
     },
     number: {
         $: item => typeof item !== "number",
