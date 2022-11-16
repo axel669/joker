@@ -2,10 +2,11 @@ import { transform } from "./schema.mjs"
 import { builtin } from "./types.mjs"
 
 const fname = (func) => func.replace(/\./g, "_")
-let nameCount = 0
+let count = {}
 const varname = (varname) => {
-    const name = `${varname}${nameCount}`
-    nameCount += 1
+    const n = count[varname]  ?? 0
+    const name = `${varname}${n}`
+    count[varname] = n + 1
     return name
 }
 const nullable = (optional, name, core) => {
@@ -18,7 +19,7 @@ const nullable = (optional, name, core) => {
     }
     return core
 }
-const wat = (type, sub, args) => {
+const typeForm = (type, sub, args) => {
     const f = builtin[type][sub]
     if (typeof f === "function") {
         if (args === undefined) {
@@ -28,7 +29,7 @@ const wat = (type, sub, args) => {
     }
     return { expr: f, args }
 }
-const wat2 = (thing, name) => {
+const validationExpr = (thing, name) => {
     if (thing.expr !== undefined) {
         return `(${thing.expr})`
             .replace(/\$item/g, name)
@@ -42,9 +43,9 @@ const wat2 = (thing, name) => {
 }
 const $if = (name, path, optional, type, typeargs, closure) => {
     const funcs = [
-        wat(type, "$"),
+        typeForm(type, "$"),
         ...Object.keys(typeargs).map(
-            (key) => wat(type, key, typeargs[key])
+            (key) => typeForm(type, key, typeargs[key])
         )
     ]
     funcs.forEach(
@@ -56,7 +57,7 @@ const $if = (name, path, optional, type, typeargs, closure) => {
         }
     )
     const condition = funcs.map(
-        (cond) => wat2(cond, name)
+        (cond) => validationExpr(cond, name)
     )
     const args = funcs.length > 1 ? JSON.stringify(typeargs) : ""
     const core = [
@@ -100,6 +101,19 @@ const codify = (itemName, info, path, closure) => {
         return codifyArray(name, info, path, closure)
     }
 
+    if (type === "conditional") {
+        const condName = varname("cond")
+        closure[condName] = typeargs.condition
+        return [
+            `if (${condName}(${name})) {`,
+            ...codify(name, typeargs.true, path, closure),
+            `}`,
+            `else {`,
+            ...codify(name, typeargs.false, path, closure),
+            `}`
+        ]
+    }
+
     if (type !== "object") {
         return $if(name, path, info.optional, type, typeargs, closure)
     }
@@ -135,8 +149,11 @@ const validator = (schema) => {
     const closure = {}
     const body = codify("item", typeInfo, [], closure)
     const { lines } = [
-        ...Object.keys(closure).map(
-            (name) => `const ${fname(name)} = types.${name}`
+        ...Object.entries(closure).map(
+            ([name, value]) =>
+                (typeof value === "function")
+                ? `const ${fname(name)} = condition.${name}`
+                : `const ${fname(name)} = types.${name}`
         ),
         `return (item) => {`,
         `const errors = []`,
@@ -157,7 +174,13 @@ const validator = (schema) => {
     )
     const code = lines.join("\n")
 
-    const validate = new Function("types", code)(builtin)
+    const condition = Object.fromEntries(
+        Object.entries(closure)
+            .filter(
+                ([, value]) => typeof value === "function"
+            )
+    )
+    const validate = new Function("types", "condition", code)(builtin, condition)
     validate.code = code
     validate.schema = schema
     return validate

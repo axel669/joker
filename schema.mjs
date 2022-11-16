@@ -1,7 +1,25 @@
-import { builtin } from "./types.mjs"
-
-const type = Symbol("type")
 const nameRegex = /^(?<optional>\?)?(?<name>[a-zA-Z\$_\.][a-zA-Z\$_0-9\.]*)(?<array>\[(?<itemopt>\?)?\])?(\/(?<desc>.+))?$/
+const formatSchema = (schema, propName) => {
+    if (typeof schema === "string") {
+        return { "joker.type": schema }
+    }
+
+    if (schema["joker.type"] === "conditional") {
+        const t = transform(schema.true, propName)
+        const f = transform(schema.false, propName)
+
+        t.name = ""
+        f.name = ""
+        return {
+            "joker.type": "conditional",
+            condition: schema.condition,
+            true: t,
+            false: f,
+        }
+    }
+
+    return schema
+}
 const transform = (schema, propName) => {
     const { groups } = nameRegex.exec(propName)
 
@@ -23,7 +41,8 @@ const transform = (schema, propName) => {
     }
 
     return {
-        type: typeof schema === "string" ? {"joker.type": schema} : schema,
+        // type: typeof schema === "string" ? {"joker.type": schema} : schema,
+        type: formatSchema(schema, groups.name),
         name,
         array,
         itemOptional,
