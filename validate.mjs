@@ -116,17 +116,12 @@ const codify = (itemName, info, path, closure) => {
 
     if (type === "conditional") {
         const condName = varname("cond")
-        const condOpt = varname("condFunc")
+        const condValue = varname("condValue")
         const { "joker.type": _, condition, ...exprs } = typeargs
         closure[condName] = condition
-        // closure[condFunc] = Object.fromEntries(
-        //     Object.entries(exprs).map(
-        //         ([key, schema]) => new Function("item"
-        //     )
-        // )
-        // return [`console.log("conditional?")`]
         return [
-            `switch(${condName}(${name})) {`,
+            `const ${condValue} = ${condName}(${name})`,
+            `switch(${condValue}) {`,
             ...Object.entries(exprs).map(
                 ([key, schema]) => [
                     `case "${key}": {`,
@@ -135,6 +130,9 @@ const codify = (itemName, info, path, closure) => {
                     `break`,
                 ]
             ).flat(),
+            `default: {`,
+            `errors.push({ message: \`item${path.join("")} condition did not return a valid key\`, path: \`item${path.join("")}\`, key: ${condValue} })`,
+            `}`,
             `}`
         ]
         // return [

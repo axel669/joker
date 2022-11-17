@@ -1,3 +1,6 @@
+## 0.2.3
+- made conditionals report when an invalid key is returned
+
 ## 0.2.2
 - made keyed conditionals
 - removed boolean conditionals
