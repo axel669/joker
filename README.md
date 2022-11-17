@@ -4,7 +4,7 @@ Validation (and soon masking) library that is small, fast, and simple.
 ## TODO
 - ~~add some more built in validators~~
 - ~~allow custom validators~~
-- keyed conditions?
+- ~~keyed conditions?~~
 - wildcard object keys?
 - maybe other stuff if people suggest it
 
@@ -12,7 +12,7 @@ Validation (and soon masking) library that is small, fast, and simple.
 ```js
 import joker from "@axel669/joker"
 
-const validate = joker.compile(schema)
+const validate = joker.validator(schema)
 console.log(
     validate(data)
 )
@@ -53,8 +53,10 @@ const schema = {
 
 ### Conditional Validators
 Joker has the ability to change which schema it validates an item with based on
-a custom condition function. Only supports 2 options right now, might allow for
-some kind of keyed schema thing in the future if it's highly requested.
+a custom condition function. The condition function should return a key that
+defines which key within the schema to validate with. All keys are treated as
+strings regardless of the type it might look like as an object key.
+Symbols are not supported values.
 
 ```js
 const schema = {
@@ -65,14 +67,14 @@ const schema = {
             //  use the joker.type "conditional" with a condition function
             "joker.type": "conditional",
             //  the condition to eval on an item
-            condition: (item) => item.name.length < 3,
+            condition: (item) => item.name.length < 3 ? "first" : "second",
             //  keys are picked based on the value of the condition function
-            true: {
+            first: {
                 "name": "string",
                 "count": {"joker.type": "string", min: 5},
                 "tags[]": "string"
             },
-            false: {
+            second: {
                 "name": {
                     "joker.type": "string",
                     format: /^\w+$/
@@ -94,12 +96,20 @@ I'll shorthand that opr something.
 > Names can contain dashes, underscores, and letters/numbers. Other characters
 > are not supported.
 
-> NOTE: All validation functions should return true when the value **fails**
-> validation. Knowing deMorgan's rule for symbolic logic makes this far easier.
+### IMPORTANT INFO (maybe I'll even read it)
+> NOTE: All validation functions are used to check if an item is **bad**, so
+> the functions should return `true` when it finds an issue with the value.
+> I recommend looking up deMorgan's rule in symbolic logic to make things
+> easier.
+>
+> This means <br />
+> `validation(item) -> true`, item is **bad** <br />
+> `validation(item) -> false`, item is **good**
 
 ```js
 joker.addType(
     "string-number",
+    //  Define when the item is bad
     (item) => typeof item !== "string" && typeof string !== "number"
 )
 joker.extendType(

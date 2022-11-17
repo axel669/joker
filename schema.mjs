@@ -5,17 +5,32 @@ const formatSchema = (schema, propName) => {
     }
 
     if (schema["joker.type"] === "conditional") {
-        const t = transform(schema.true, propName)
-        const f = transform(schema.false, propName)
+        const { "joker.type": _, condition, ...rest } = schema
+        return Object.fromEntries([
+            ["joker.type", "conditional"],
+            ["condition", schema.condition],
+            ...Object.entries(rest).map(
+                ([key, value]) => {
+                    const res = [
+                        key,
+                        transform(value, propName)
+                    ]
+                    res[1].name = ""
+                    return res
+                }
+            )
+        ])
+        // const t = transform(schema.true, propName)
+        // const f = transform(schema.false, propName)
 
-        t.name = ""
-        f.name = ""
-        return {
-            "joker.type": "conditional",
-            condition: schema.condition,
-            true: t,
-            false: f,
-        }
+        // t.name = ""
+        // f.name = ""
+        // return {
+        //     "joker.type": "conditional",
+        //     condition: schema.condition,
+        //     true: t,
+        //     false: f,
+        // }
     }
 
     return schema

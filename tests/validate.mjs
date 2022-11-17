@@ -83,13 +83,13 @@ const data = [{
             "wat": {"joker.type": "array", length: 2},
             "wat[]": {
                 "joker.type": "conditional",
-                condition: (item) => item.name.length < 3,
-                true: {
+                condition: (item) => item.name.length < 3 ? "a" : "b",
+                a: {
                     "name": "string",
                     "count": {"joker.type": "string", min: 5},
                     "tags[]": "string"
                 },
-                false: {
+                b: {
                     "name": {
                         "joker.type": "string",
                         format: /^\w+$/
@@ -109,23 +109,23 @@ const data = [{
     }
     const validate = joker.validator(schema)
 
-    // console.log(validate)
+    console.log(validate)
     console.log(validate(null))
     console.log(validate(data))
 
-    const validateParents = joker.validator({
-        root: {
-            artist: "ka-chan",
-            rigger: "mommy",
-        }
-    })
+    // const validateParents = joker.validator({
+    //     root: {
+    //         artist: "ka-chan",
+    //         rigger: "mommy",
+    //     }
+    // })
 
-    console.log(
-        validateParents({ artist: "hachi", rigger: "lola" })
-    )
-    console.log(
-        validateParents({ artist: "none?", rigger: "random" })
-    )
+    // console.log(
+    //     validateParents({ artist: "hachi", rigger: "lola" })
+    // )
+    // console.log(
+    //     validateParents({ artist: "none?", rigger: "random" })
+    // )
 
     // const _valid = joker.validator(_schema)
     // console.log(_valid)

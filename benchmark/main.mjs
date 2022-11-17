@@ -9,13 +9,13 @@ const suite = new bench.Suite()
 
 const schema = {
     "root[]": {
-        // "_id": {
-        //     "joker.type": "conditional",
-        //     condition: () => Math.random() < 0.5,
-        //     true: {"joker.type": "string", min: 5},
-        //     false: "string"
-        // },
-        "_id": {"joker.type": "string", format: /.+/},
+        "_id": {
+            "joker.type": "conditional",
+            condition: () => Math.random() < 0.5 ? "a" : "b",
+            a: {"joker.type": "string", min: 5},
+            b: "string"
+        },
+        // "_id": {"joker.type": "string", format: /.+/},
         // "_id": "string",
         "index": "number",
         "guid": "string",
