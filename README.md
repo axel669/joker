@@ -2,8 +2,10 @@
 Validation (and soon masking) library that is small, fast, and simple.
 
 ## TODO
-- add some more built in validators
-- allow custom validators
+- ~~add some more built in validators~~
+- ~~allow custom validators~~
+- keyed conditions?
+- wildcard object keys?
 - maybe other stuff if people suggest it
 
 ## Usage
@@ -23,47 +25,88 @@ const schema = {
     root: {
         //  use object syntax for object validation
         //  with the key being the validator function to use
-        "id": joker.number(),
+        "id": "number",
         //  start a key name with "?" to mark as nullable (can be null/undefined)
-        "?thing": joker.bool(),
+        "?thing": "bool",
         //  nested objects generate nested checks with the validator
         "nested": {
-            "tagged": joker.bool()
+            "tagged": "bool"
         },
         //  keys with "[]" are checked as arrays, with each item using the
         //  given schema for validation
         "wat[]": {
-            "name": joker.string({max: 20}),
-            "count": joker.number({min: 5}),
+            "name": {"joker.type": "string", max: 20},
+            "count": {"joker.type": "number", min: 5},
         },
         //  an array marked with "[?]" allows individual items to be nullable
-        "tags[?]": joker.string({length: 10})
+        "tags[?]": {"joker.type": "string", length: 10}
     }
 }
 ```
 ### Built-in Validators
 - int {min, max}
 - number {min, max}
-- string {min, max, length}
+- string {min, max, length, format}
 - bool
+- array {min, max, length}
+- object
 
-### Custom Validators
-Joker contains a utility to help make custom validators.
-Custom validator functions should return a string with the code to run for the
-the validation; Specifically, the code returned is used to mark a value as
-invalid. The function to generate the code will be given a `name` argument
-that represents the value being checked.
-The `joker.buildType` function can be used to help create custom validators
-that can take options for extended validation.
+### Conditional Validators
+Joker has the ability to change which schema it validates an item with based on
+a custom condition function. Only supports 2 options right now, might allow for
+some kind of keyed schema thing in the future if it's highly requested.
 
 ```js
-const hi = joker.buildType(
-    //  name of the type to display in validation errors
-    "hi",
-    //  basic validation of the type (regardless of options)
-    (name) => `typeof ${name} !== "string" || ${name}.startsWith("hi") === false`,
-    //  any number of [key, function] pairs for options that can generate
-    //  more specific validation of a type
-    ["end", (name, optionValue) => `${name}.endsWith("${optionValue}") === false`]
+const schema = {
+    "root": {
+        "?id": "number",
+        "wat": {"joker.type": "array", length: 2},
+        "wat[]": {
+            //  use the joker.type "conditional" with a condition function
+            "joker.type": "conditional",
+            //  the condition to eval on an item
+            condition: (item) => item.name.length < 3,
+            //  keys are picked based on the value of the condition function
+            true: {
+                "name": "string",
+                "count": {"joker.type": "string", min: 5},
+                "tags[]": "string"
+            },
+            false: {
+                "name": {
+                    "joker.type": "string",
+                    format: /^\w+$/
+                },
+                "count": "number",
+            }
+        }
+    }
+}
+```
+
+### Custom Validators
+Joker allows for the creation of custom type validators through the
+`joker.addType` function, as well as extensions to any of the built in
+validators through the `joker.extendType` function. To add a custom type with
+extra keywords, a call to addType and extendType is needed. Maybe in the future
+I'll shorthand that opr something.
+
+> Names can contain dashes, underscores, and letters/numbers. Other characters
+> are not supported.
+
+> NOTE: All validation functions should return true when the value **fails**
+> validation. Knowing deMorgan's rule for symbolic logic makes this far easier.
+
+```js
+joker.addType(
+    "string-number",
+    (item) => typeof item !== "string" && typeof string !== "number"
+)
+joker.extendType(
+    "int",
+    {
+        even: item => (item % 2) !== 0,
+        odd: item => (item % 2) !== 1
+    }
 )
 ```

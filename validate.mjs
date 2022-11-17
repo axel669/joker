@@ -1,7 +1,7 @@
 import { transform } from "./schema.mjs"
 import { builtin } from "./types.mjs"
 
-const fname = (func) => func.replace(/\./g, "_")
+const fname = (func) => func.replace(/\.|\-/g, "_")
 let count = {}
 const varname = (varname) => {
     const n = count[varname]  ?? 0
@@ -30,16 +30,11 @@ const typeForm = (type, sub, args) => {
     return { expr: f, args }
 }
 const validationExpr = (thing, name) => {
-    // if (thing.expr !== undefined) {
-    //     return `(${thing.expr})`
-    //         .replace(/\$item/g, name)
-    //         .replace(/\$value/g, JSON.stringify(thing.args))
-    // }
     const [func, , argname] = thing
     if (argname === undefined) {
         return `${fname(func)}(${name})`
     }
-    return `${fname(func)}(${name}, ${argname})`
+    return [`${fname(func)}(${name}, ${argname})`, argname, func]
 }
 const $if = (name, path, optional, type, typeargs, closure) => {
     const funcs = [
@@ -50,9 +45,6 @@ const $if = (name, path, optional, type, typeargs, closure) => {
     ]
     funcs.forEach(
         ([key, value, argname, args]) => {
-            // if (Array.isArray(key) === false) {
-            //     return
-            // }
             closure[key] = value
             if (args === undefined) {
                 return
@@ -63,11 +55,28 @@ const $if = (name, path, optional, type, typeargs, closure) => {
     const condition = funcs.map(
         (cond) => validationExpr(cond, name)
     )
-    const args = funcs.length > 1 ? JSON.stringify(typeargs) : ""
+    const argname = varname("schemaArgs")
+    closure[argname] = typeargs
+    const [top, ...subs] = condition
     const core = [
-        `if (${condition.join(" || ")}) {`,
-        `errors.push(\`item${path.join("")} failed validation: ${type}${args}\`)`,
+        `if (${top}) {`,
+        `errors.push({message:\`item${path.join("")} failed validation: ${type}\`, type: "${type}", path: \`item${path.join("")}\`, value: ${name}})`,
         `}`,
+        ...(
+            (subs.length === 0)
+            ? []
+            : [
+                `else {`,
+                ...subs.map(
+                    ([cond, schema, type]) => [
+                        `if (${cond}) {`,
+                        `errors.push({message:\`item${path.join("")} failed validation: ${type}\`, type: "${type}", schema: ${schema}, path: \`item${path.join("")}\`, value: ${name}})`,
+                        `}`
+                    ]
+                ).flat(),
+                `}`
+            ]
+        ),
     ]
     return nullable(optional, name, core)
 }
@@ -76,7 +85,7 @@ const codifyArray = (itemName, info, path, closure) => {
     const loopName = varname("item")
     const core = [
         `if (Array.isArray(${itemName}) === false) {`,
-        `errors.push(\`item${path.join("")} is not an array\`)`,
+        `errors.push({message: \`item${path.join("")} is not an array\`, value: ${itemName}, path: \`item${path.join("")}\`})`,
         `}`,
         `else {`,
         `for (let source = ${itemName}, ${index} = 0; ${index} < source.length; ${index} += 1) {`,
@@ -126,7 +135,7 @@ const codify = (itemName, info, path, closure) => {
     const core = [
         `const ${nextName} = ${name}`,
         `if (typeof ${nextName} !== "object" || ${nextName} === null) {`,
-        `errors.push(\`item${path.join("")} is not an object\`)`,
+        `errors.push({message: \`item${path.join("")} is not an object\`, value: ${nextName}, path: \`item${path.join("")}\`})`,
         `}`,
         `else {`,
         ...info.props
@@ -155,12 +164,6 @@ const validator = (schema) => {
     const closure = {}
     const body = codify("item", typeInfo, [], closure)
     const { lines } = [
-        // ...Object.entries(closure).map(
-        //     ([name, value]) =>
-        //         (typeof value === "function")
-        //         ? `const ${fname(name)} = types.${name}`
-        //         : `const ${fname(name)} = closure.${name}`
-        // ),
         ...Object.keys(closure).map(
             (name) => `const ${fname(name)} = closure["${name}"]`
         ),
@@ -183,14 +186,7 @@ const validator = (schema) => {
     )
     const code = lines.join("\n")
 
-    // const condition = Object.fromEntries(
-    //     Object.entries(closure)
-    //         .filter(
-    //             ([, value]) => typeof value !== "boolean"
-    //         )
-    // )
-    console.log(closure)
-    const validate = new Function("types", "closure", code)(builtin, closure)
+    const validate = new Function("closure", code)(closure)
     validate.code = code
     validate.schema = schema
     return validate
