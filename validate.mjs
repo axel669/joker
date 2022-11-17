@@ -116,15 +116,33 @@ const codify = (itemName, info, path, closure) => {
 
     if (type === "conditional") {
         const condName = varname("cond")
-        closure[condName] = typeargs.condition
+        const condValue = varname("condValue")
+        const { "joker.type": _, condition, ...exprs } = typeargs
+        closure[condName] = condition
         return [
-            `if (${condName}(${name})) {`,
-            ...codify(name, typeargs.true, path, closure),
+            `const ${condValue} = ${condName}(${name})`,
+            `switch(${condValue}) {`,
+            ...Object.entries(exprs).map(
+                ([key, schema]) => [
+                    `case "${key}": {`,
+                    ...codify(name, schema, path, closure),
+                    `}`,
+                    `break`,
+                ]
+            ).flat(),
+            `default: {`,
+            `errors.push({ message: \`item${path.join("")} condition did not return a valid key\`, path: \`item${path.join("")}\`, key: ${condValue} })`,
             `}`,
-            `else {`,
-            ...codify(name, typeargs.false, path, closure),
             `}`
         ]
+        // return [
+        //     `if (${condName}(${name})) {`,
+        //     ...codify(name, typeargs.true, path, closure),
+        //     `}`,
+        //     `else {`,
+        //     ...codify(name, typeargs.false, path, closure),
+        //     `}`
+        // ]
     }
 
     if (type !== "object") {
