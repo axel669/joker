@@ -1,16 +1,23 @@
-import fs from "fs/promises"
+import data from "./big.json" assert {type: "json"}
 
 import bench from "benchmark"
 
-import { validator } from "../joker.mjs"
+import joker from "../joker.mjs"
 import AJV from "ajv"
 
 const suite = new bench.Suite()
 
 const schema = {
-    "root[?]": {
-        "_id": "string",
-        "?index": "number",
+    "root[]": {
+        // "_id": {
+        //     "joker.type": "conditional",
+        //     condition: () => Math.random() < 0.5,
+        //     true: {"joker.type": "string", min: 5},
+        //     false: "string"
+        // },
+        "_id": {"joker.type": "string", format: /.+/},
+        // "_id": "string",
+        "index": "number",
         "guid": "string",
         "isActive": "bool",
         "age": "number",
@@ -23,26 +30,14 @@ const schema = {
         "favoriteFruit": "string"
     }
 }
-const data = JSON.parse(
-    await fs.readFile("tests/big.json", "utf8")
-)
-// const data = {
-//     id: 100,
-//     wat: [
-//         { name: "hi", count: "0" },
-//         { name: "test", count: 10 },
-//         { name: "another one", count: 0 },
-//     ]
-// }
-const validate = validator(schema)
-
-const ajv = new AJV()
-const validate2 = ajv.compile({
+const ajvSchema = {
     type: "array",
     items: {
         type: "object",
         properties: {
-            "_id": { type: "string" },
+            // "_id": { type: "string", minLength: 5 },
+            "_id": { type: "string", pattern: ".+" },
+            // "_id": { type: "string" },
             "index": { type: "number" },
             "guid": { type: "string" },
             "isActive": { type: "boolean" },
@@ -59,9 +54,12 @@ const validate2 = ajv.compile({
             "favoriteFruit": { type: "string" },
         }
     }
-})
+}
 
-// console.log(JSON.stringify(data).length)
+const validate = joker.validator(schema)
+
+const ajv = new AJV()
+const validate2 = ajv.compile(ajvSchema)
 
 const valid = [
     validate(data),
@@ -70,28 +68,18 @@ const valid = [
 
 console.log(valid)
 
-if (valid.includes(false) === true) {
+if (valid[0] !== true || valid[1] !== true) {
     process.exit(1)
 }
 
-// console.log(validate)
-// console.log(validate2)
-
 suite.add(
-    "joker - reuse",
+    "joker",
     () => validate(data)
 )
 suite.add(
     "ajv",
     () => validate2(data)
 )
-// suite.add(
-//     "joker - create and use",
-//     () => {
-//         const validate = validator(schema)
-//         const valid = validate(data)
-//     }
-// )
 
 suite.on('cycle', function (event) {
     console.log(String(event.target));
