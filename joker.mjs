@@ -1,25 +1,19 @@
 import validator from "./validate.mjs"
-import { builtin } from "./types.mjs"
+import { builtin, errors } from "./types.mjs"
 
-const addType = (name, $) => {
-    if (builtin[name] !== undefined) {
-        return false
+const extendTypes = (defs) => {
+    for (const [key, func] of Object.entries(defs)) {
+        builtin[key] = builtin[key] ?? func
     }
-    builtin[name] = {$}
-    return true
 }
-const extendType = (name, extensions) => {
-    if (builtin[name] === undefined) {
-        return false
+const extendErrors = (defs) => {
+    for (const [key, func] of Object.entries(defs)) {
+        errors[key] = func
     }
-    for (const [key, func] of Object.entries(extensions)) {
-        builtin[name][key] = builtin[name][key] ?? func
-    }
-    return true
 }
 
 export default {
     validator,
-    addType,
-    extendType,
+    extendTypes,
+    extendErrors,
 }
