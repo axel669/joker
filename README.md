@@ -2,9 +2,6 @@
 Validation (and soon masking) library that is small, fast, and simple.
 
 ## TODO
-- ~~add some more built in validators~~
-- ~~allow custom validators~~
-- ~~keyed conditions?~~
 - wildcard object keys?
 - maybe other stuff if people suggest it
 
@@ -21,6 +18,9 @@ console.log(
 ## Schema
 ```js
 const schema = {
+    //  itemName can be used to customize the path reported by validation
+    //  errors. default is "item"
+    itemName: "config",
     //  root defines the top level the data
     root: {
         //  use object syntax for object validation
@@ -88,10 +88,8 @@ const schema = {
 
 ### Custom Validators
 Joker allows for the creation of custom type validators through the
-`joker.addType` function, as well as extensions to any of the built in
-validators through the `joker.extendType` function. To add a custom type with
-extra keywords, a call to addType and extendType is needed. Maybe in the future
-I'll shorthand that opr something.
+`joker.extendTypes` function, as well as extensions to any of the built in
+validators. Does not support overriding built-in validators or keywords.
 
 > Names can contain dashes, underscores, and letters/numbers. Other characters
 > are not supported.
@@ -107,16 +105,29 @@ I'll shorthand that opr something.
 > `validation(item) -> false`, item is **good**
 
 ```js
-joker.addType(
-    "string-number",
+joker.extendTypes(
     //  Define when the item is bad
-    (item) => typeof item !== "string" && typeof string !== "number"
+    //  typeName.$ is the base type validator that runs regardless of any params
+    //  that get passed in. typeName.paramName allows for validating custom
+    //  params on a type.
+    "string-number.$": (item) => (
+        typeof item !== "string"
+        && typeof string !== "number"
+    ),
+    "string-number.nan": (item, isnan) => isNaN(item) !== isnan
 )
-joker.extendType(
-    "int",
-    {
-        even: item => (item % 2) !== 0,
-        odd: item => (item % 2) !== 1
-    }
-)
+```
+
+### Custom Error Messages
+Joker has a generic validation failure message, but it doesn't look great when
+used in things like libraries for config validation, or validating parameters
+passed to rest endpoints, etc. The `extendErrors` function allows for custom
+error messages for any custom types, or overriding built-in type error messages.
+The keys for the error messages are the same as the type/param keys.
+
+```js
+joker.extendErrors({
+    "string-number.$": (path) => `${path} is not a string or a number`,
+    "string-number.nan": (path, isnan) => `${path} is${isnan ? " not" : ""} NaN`
+})
 ```

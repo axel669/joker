@@ -1,3 +1,8 @@
+## 0.2.4
+- added top level path name customization
+- added custom error messages for any type
+- improved custom type/param adding
+
 ## 0.2.3
 - made conditionals report when an invalid key is returned
 
