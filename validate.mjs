@@ -37,22 +37,24 @@ const validationExpr = (thing, name) => {
     }
     return [`${fname(func)}(${name}, ${argname})`, argname, func, arg]
 }
-const errorMessage = ({path, typeName, schema, value, args}) => {
+const errorMessage = ({path, typeName, schema, value, args, config}) => {
+    const topName = config.itemName ?? "item"
+    const fullPath = `${topName}${path.join("")}`
     const message = (
-        errors[typeName]?.(path, args)
-        ?? `${path} failed validation: ${typeName}`
+        errors[typeName]?.(fullPath, args)
+        ?? `${fullPath} failed validation: ${typeName}`
     )
     const parts = [
         `message: \`${message}\``,
         `type: "${typeName}"`,
-        `path: \`${path}\``,
+        `path: \`${fullPath}\``,
         `value: ${value}`,
         schema ? `args: ${schema}` : null,
     ].filter(part => part !== null)
     .join(", ")
     return `errors.push({${parts}})`
 }
-const $if = (name, path, optional, type, typeargs, closure) => {
+const $if = (name, path, optional, type, typeargs, closure, config) => {
     const funcs = [
         typeForm(type, "$"),
         ...Object.keys(typeargs).map(
@@ -77,36 +79,41 @@ const $if = (name, path, optional, type, typeargs, closure) => {
     const core = [
         `if (${top[0]}) {`,
         errorMessage({
-            path: `item${path.join("")}`,
+            path,
             typeName: top[1],
             value: name,
+            config,
         }),
         `}`,
-        ...(
-            (subs.length === 0)
-            ? []
-            : [
-                `else {`,
-                ...subs.map(
-                    ([cond, schema, type, args]) => [
-                        `if (${cond}) {`,
-                        errorMessage({
-                            path: `item${path.join("")}`,
-                            typeName: type,
-                            schema,
-                            value: name,
-                            args,
-                        }),
-                        `}`
-                    ]
-                ).flat(),
-                `}`
-            ]
-        ),
     ]
-    return nullable(optional, name, core)
+    if (subs.length === 0) {
+        return nullable(optional, name, core)
+    }
+    return nullable(
+        optional,
+        name,
+        [
+            ...core,
+            `else {`,
+            ...subs.map(
+                ([cond, schema, type, args]) => [
+                    `if (${cond}) {`,
+                    errorMessage({
+                        path,
+                        typeName: type,
+                        schema,
+                        value: name,
+                        args,
+                        config,
+                    }),
+                    `}`
+                ]
+            ).flat(),
+            `}`
+        ]
+    )
 }
-const codifyArray = ({itemName, info, path, closure}) => {
+const codifyArray = ({itemName, info, path, closure, config}) => {
     const index = varname("index")
     const loop = {
         vars: `let source = ${itemName}, ${index} = 0`,
@@ -115,11 +122,11 @@ const codifyArray = ({itemName, info, path, closure}) => {
     }
     const core = [
         `if (Array.isArray(${itemName}) === false) {`,
-        // `errors.push({message: \`item${path.join("")} is not an array\`, value: ${itemName}, path: \`item${path.join("")}\`})`,
         errorMessage({
-            path: `item${path.join("")}`,
+            path,
             typeName: "[internal] array",
             value: itemName,
+            config,
         }),
         `}`,
         `else {`,
@@ -134,15 +141,15 @@ const codifyArray = ({itemName, info, path, closure}) => {
                 props: info.props,
             },
             path: [...path, `[\${${index}}]`],
-            closure
+            closure,
+            config,
         }),
         `}`,
         `}`
     ]
     return nullable(info.optional, itemName, core)
 }
-const codify = ({itemName, info, path, closure}) => {
-    // console.log(info)
+const codify = ({itemName, info, path, closure, config}) => {
     const { "joker.type": type, ...typeargs } = info.type
     const name = `${itemName}${info.name}`
 
@@ -151,7 +158,8 @@ const codify = ({itemName, info, path, closure}) => {
             itemName: name,
             info,
             path,
-            closure
+            closure,
+            config,
         })
     }
 
@@ -166,17 +174,23 @@ const codify = ({itemName, info, path, closure}) => {
             ...Object.entries(exprs).map(
                 ([key, schema]) => [
                     `case "${key}": {`,
-                    ...codify({itemName: name, info: schema, path, closure}),
+                    ...codify({
+                        itemName: name,
+                        info: schema,
+                        path,
+                        closure,
+                        config,
+                    }),
                     `}`,
                     `break`,
                 ]
             ).flat(),
             `default: {`,
-            // `errors.push({ message: \`item${path.join("")} condition did not return a valid key\`, path: \`item${path.join("")}\`, key: ${condValue} })`,
             errorMessage({
-                path: `item${path.join("")}`,
+                path,
                 typeName: "[internal] conditional",
-                value: condValue
+                value: condValue,
+                config,
             }),
             `}`,
             `}`
@@ -184,18 +198,18 @@ const codify = ({itemName, info, path, closure}) => {
     }
 
     if (type !== "object") {
-        return $if(name, path, info.optional, type, typeargs, closure)
+        return $if(name, path, info.optional, type, typeargs, closure, config)
     }
 
     const nextName = varname("item")
     const core = [
         `const ${nextName} = ${name}`,
         `if (typeof ${nextName} !== "object" || ${nextName} === null) {`,
-        // `errors.push({message: \`item${path.join("")} is not an object\`, value: ${nextName}, path: \`item${path.join("")}\`})`,
         errorMessage({
-            path: `item${path.join("")}`,
+            path,
             typeName: "[internal] object",
             value: nextName,
+            config,
         }),
         `}`,
         `else {`,
@@ -205,7 +219,8 @@ const codify = ({itemName, info, path, closure}) => {
                     itemName: nextName,
                     info: prop,
                     path: [...path, prop.name],
-                    closure
+                    closure,
+                    config,
                 })
             )
             .flat(),
@@ -226,7 +241,8 @@ const validator = (schema) => {
         itemName: "item",
         info: typeInfo,
         path: [],
-        closure
+        closure,
+        config,
     })
     const { lines } = [
         ...Object.keys(closure).map(

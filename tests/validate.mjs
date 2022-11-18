@@ -70,6 +70,7 @@ const data = [{
 
 {
     const schema = {
+        itemName: "obj",
         "root": {
             "?id": "number",
             "wat": {"joker.type": "array", length: 2},
