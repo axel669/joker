@@ -1,5 +1,5 @@
 import { transform } from "./schema.mjs"
-import { builtin } from "./types.mjs"
+import { builtin, errors } from "./types.mjs"
 
 const fname = (func) => func.replace(/\.|\-/g, "_")
 let count = {}
@@ -20,23 +20,41 @@ const nullable = (optional, name, core) => {
     return core
 }
 const typeForm = (type, sub, args) => {
-    const f = builtin[type][sub]
+    const key = `${type}.${sub}`
+    const f = builtin[key]
     if (typeof f === "function") {
         if (args === undefined) {
-            return [`${type}.${sub}`, f]
+            return [key, f]
         }
-        return [`${type}.${sub}`, f, varname("args"), args]
+        return [key, f, varname("args"), args]
     }
     return { expr: f, args }
 }
 const validationExpr = (thing, name) => {
-    const [func, , argname] = thing
+    const [func, , argname, arg] = thing
     if (argname === undefined) {
-        return `${fname(func)}(${name})`
+        return [`${fname(func)}(${name})`, func]
     }
-    return [`${fname(func)}(${name}, ${argname})`, argname, func]
+    return [`${fname(func)}(${name}, ${argname})`, argname, func, arg]
 }
-const $if = (name, path, optional, type, typeargs, closure) => {
+const errorMessage = ({path, typeName, schema, value, args, config}) => {
+    const topName = config.itemName ?? "item"
+    const fullPath = `${topName}${path.join("")}`
+    const message = (
+        errors[typeName]?.(fullPath, args)
+        ?? `${fullPath} failed validation: ${typeName}`
+    )
+    const parts = [
+        `message: \`${message}\``,
+        `type: "${typeName}"`,
+        `path: \`${fullPath}\``,
+        `value: ${value}`,
+        schema ? `args: ${schema}` : null,
+    ].filter(part => part !== null)
+    .join(", ")
+    return `errors.push({${parts}})`
+}
+const $if = (name, path, optional, type, typeargs, closure, config) => {
     const funcs = [
         typeForm(type, "$"),
         ...Object.keys(typeargs).map(
@@ -59,59 +77,90 @@ const $if = (name, path, optional, type, typeargs, closure) => {
     closure[argname] = typeargs
     const [top, ...subs] = condition
     const core = [
-        `if (${top}) {`,
-        `errors.push({message:\`item${path.join("")} failed validation: ${type}\`, type: "${type}", path: \`item${path.join("")}\`, value: ${name}})`,
+        `if (${top[0]}) {`,
+        errorMessage({
+            path,
+            typeName: top[1],
+            value: name,
+            config,
+        }),
         `}`,
-        ...(
-            (subs.length === 0)
-            ? []
-            : [
-                `else {`,
-                ...subs.map(
-                    ([cond, schema, type]) => [
-                        `if (${cond}) {`,
-                        `errors.push({message:\`item${path.join("")} failed validation: ${type}\`, type: "${type}", schema: ${schema}, path: \`item${path.join("")}\`, value: ${name}})`,
-                        `}`
-                    ]
-                ).flat(),
-                `}`
-            ]
-        ),
     ]
-    return nullable(optional, name, core)
+    if (subs.length === 0) {
+        return nullable(optional, name, core)
+    }
+    return nullable(
+        optional,
+        name,
+        [
+            ...core,
+            `else {`,
+            ...subs.map(
+                ([cond, schema, type, args]) => [
+                    `if (${cond}) {`,
+                    errorMessage({
+                        path,
+                        typeName: type,
+                        schema,
+                        value: name,
+                        args,
+                        config,
+                    }),
+                    `}`
+                ]
+            ).flat(),
+            `}`
+        ]
+    )
 }
-const codifyArray = (itemName, info, path, closure) => {
+const codifyArray = ({itemName, info, path, closure, config}) => {
     const index = varname("index")
-    const loopName = varname("item")
+    const loop = {
+        vars: `let source = ${itemName}, ${index} = 0`,
+        cond: `${index} < source.length`,
+        iter: `${index} += 1`,
+    }
     const core = [
         `if (Array.isArray(${itemName}) === false) {`,
-        `errors.push({message: \`item${path.join("")} is not an array\`, value: ${itemName}, path: \`item${path.join("")}\`})`,
+        errorMessage({
+            path,
+            typeName: "[internal] array",
+            value: itemName,
+            config,
+        }),
         `}`,
         `else {`,
-        `for (let source = ${itemName}, ${index} = 0; ${index} < source.length; ${index} += 1) {`,
-        ...codify(
-            `source[${index}]`,
-            {
+        `for (${loop.vars}; ${loop.cond}; ${loop.iter}) {`,
+        ...codify({
+            itemName: `source[${index}]`,
+            info: {
                 array: false,
                 type: info.type,
                 name: "",
                 optional: info.itemOptional,
                 props: info.props,
             },
-            [...path, `[\${${index}}]`],
-            closure
-        ),
+            path: [...path, `[\${${index}}]`],
+            closure,
+            config,
+        }),
         `}`,
         `}`
     ]
     return nullable(info.optional, itemName, core)
 }
-const codify = (itemName, info, path, closure) => {
+const codify = ({itemName, info, path, closure, config}) => {
     const { "joker.type": type, ...typeargs } = info.type
     const name = `${itemName}${info.name}`
 
     if (info.array === true) {
-        return codifyArray(name, info, path, closure)
+        return codifyArray({
+            itemName: name,
+            info,
+            path,
+            closure,
+            config,
+        })
     }
 
     if (type === "conditional") {
@@ -125,62 +174,76 @@ const codify = (itemName, info, path, closure) => {
             ...Object.entries(exprs).map(
                 ([key, schema]) => [
                     `case "${key}": {`,
-                    ...codify(name, schema, path, closure),
+                    ...codify({
+                        itemName: name,
+                        info: schema,
+                        path,
+                        closure,
+                        config,
+                    }),
                     `}`,
                     `break`,
                 ]
             ).flat(),
             `default: {`,
-            `errors.push({ message: \`item${path.join("")} condition did not return a valid key\`, path: \`item${path.join("")}\`, key: ${condValue} })`,
+            errorMessage({
+                path,
+                typeName: "[internal] conditional",
+                value: condValue,
+                config,
+            }),
             `}`,
             `}`
         ]
-        // return [
-        //     `if (${condName}(${name})) {`,
-        //     ...codify(name, typeargs.true, path, closure),
-        //     `}`,
-        //     `else {`,
-        //     ...codify(name, typeargs.false, path, closure),
-        //     `}`
-        // ]
     }
 
     if (type !== "object") {
-        return $if(name, path, info.optional, type, typeargs, closure)
+        return $if(name, path, info.optional, type, typeargs, closure, config)
     }
 
     const nextName = varname("item")
     const core = [
         `const ${nextName} = ${name}`,
         `if (typeof ${nextName} !== "object" || ${nextName} === null) {`,
-        `errors.push({message: \`item${path.join("")} is not an object\`, value: ${nextName}, path: \`item${path.join("")}\`})`,
+        errorMessage({
+            path,
+            typeName: "[internal] object",
+            value: nextName,
+            config,
+        }),
         `}`,
         `else {`,
         ...info.props
             .map(
-                prop => codify(
-                    nextName,
-                    prop,
-                    [...path, prop.name],
-                    closure
-                )
+                prop => codify({
+                    itemName: nextName,
+                    info: prop,
+                    path: [...path, prop.name],
+                    closure,
+                    config,
+                })
             )
             .flat(),
         `}`
     ]
     return nullable(info.optional, itemName, core)
 }
-const closureExpr = ([name, value]) => {
-}
 const validator = (schema) => {
     const rootName = Object.keys(schema).find(
         key => key.startsWith("root") || key.startsWith("?root")
     )
-    const typeInfo = transform(schema[rootName], rootName)
+    const { [rootName]: root, ...config } = schema
+    const typeInfo = transform(root, rootName)
     typeInfo.name = ""
 
     const closure = {}
-    const body = codify("item", typeInfo, [], closure)
+    const body = codify({
+        itemName: "item",
+        info: typeInfo,
+        path: [],
+        closure,
+        config,
+    })
     const { lines } = [
         ...Object.keys(closure).map(
             (name) => `const ${fname(name)} = closure["${name}"]`

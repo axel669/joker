@@ -69,15 +69,8 @@ const data = [{
 // console.log(valid)
 
 {
-    joker.addType(
-        "mommy",
-        (item) => item !== "lola"
-    )
-    joker.addType(
-        "ka-chan",
-        (item) => item !== "hachi"
-    )
     const schema = {
+        itemName: "obj",
         "root": {
             "?id": "number",
             "wat": {"joker.type": "array", length: 2},
@@ -104,7 +97,7 @@ const data = [{
         wat: [
             { name: "hi", count: "0", tags: ["a", "b"] },
             { name: "test", count: 10 },
-            { name: "another one", count: 0 },
+            { name: "another one", count: "0" },
         ]
     }
     const validate = joker.validator(schema)
@@ -112,20 +105,6 @@ const data = [{
     console.log(validate)
     console.log(validate(null))
     console.log(validate(data))
-
-    // const validateParents = joker.validator({
-    //     root: {
-    //         artist: "ka-chan",
-    //         rigger: "mommy",
-    //     }
-    // })
-
-    // console.log(
-    //     validateParents({ artist: "hachi", rigger: "lola" })
-    // )
-    // console.log(
-    //     validateParents({ artist: "none?", rigger: "random" })
-    // )
 
     // const _valid = joker.validator(_schema)
     // console.log(_valid)
