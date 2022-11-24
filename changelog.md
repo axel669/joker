@@ -1,3 +1,6 @@
+## 0.2.5
+- added wildcard key checks
+
 ## 0.2.4
 - added top level path name customization
 - added custom error messages for any type

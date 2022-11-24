@@ -89,7 +89,8 @@ const data = [{
                     },
                     "count": "number",
                 }
-            }
+            },
+            "?tags{}": "string",
         }
     }
     const data = {
@@ -98,12 +99,17 @@ const data = [{
             { name: "hi", count: "0", tags: ["a", "b"] },
             { name: "test", count: 10 },
             { name: "another one", count: "0" },
-        ]
+        ],
+        tags: {
+            random: "hi",
+            another: "wat",
+            fail: 100,
+        }
     }
     const validate = joker.validator(schema)
 
     console.log(validate)
-    console.log(validate(null))
+    // console.log(validate(null))
     console.log(validate(data))
 
     // const _valid = joker.validator(_schema)

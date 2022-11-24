@@ -139,6 +139,7 @@ const codifyArray = ({itemName, info, path, closure, config}) => {
                 name: "",
                 optional: info.itemOptional,
                 props: info.props,
+                object: info.object,
             },
             path: [...path, `[\${${index}}]`],
             closure,
@@ -161,6 +162,43 @@ const codify = ({itemName, info, path, closure, config}) => {
             closure,
             config,
         })
+    }
+
+    if (info.object === true) {
+        const key = varname("key")
+        const value = varname("value")
+        const obj = varname("obj")
+        const core = [
+            `const ${obj} = ${name}`,
+            `if (typeof ${obj} !== "object" || ${obj} === null) {`,
+            errorMessage({
+                path,
+                typeName: "[internal] object",
+                value: obj,
+                config,
+            }),
+            `}`,
+            `else {`,
+            `for (const ${key} of Object.keys(${obj})) {`,
+            `const ${value} = ${obj}[${key}]`,
+            ...codify({
+                itemName: value,
+                info: {
+                    name: "",
+                    type: info.type,
+                    array: false,
+                    object: false,
+                    optional: info.optional,
+                    props: info.props,
+                },
+                path: [...path, `[\${${key}}]`],
+                closure,
+                config,
+            }),
+            `}`,
+            `}`,
+        ]
+        return nullable(info.optional, name, core)
     }
 
     if (type === "conditional") {

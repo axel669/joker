@@ -2,7 +2,7 @@
 Validation (and soon masking) library that is small, fast, and simple.
 
 ## TODO
-- wildcard object keys?
+- ~~wildcard object keys?~~
 - maybe other stuff if people suggest it
 
 ## Usage
@@ -39,7 +39,12 @@ const schema = {
             "count": {"joker.type": "number", min: 5},
         },
         //  an array marked with "[?]" allows individual items to be nullable
-        "tags[?]": {"joker.type": "string", length: 10}
+        "tags[?]": {"joker.type": "string", length: 10},
+        //  use {} to check that the values of all keys in an object are of the
+        //  right form
+        "funcs{}": {
+            "name": "string",
+        }
     }
 }
 ```
@@ -105,7 +110,7 @@ validators. Does not support overriding built-in validators or keywords.
 > `validation(item) -> false`, item is **good**
 
 ```js
-joker.extendTypes(
+joker.extendTypes({
     //  Define when the item is bad
     //  typeName.$ is the base type validator that runs regardless of any params
     //  that get passed in. typeName.paramName allows for validating custom
@@ -115,7 +120,7 @@ joker.extendTypes(
         && typeof string !== "number"
     ),
     "string-number.nan": (item, isnan) => isNaN(item) !== isnan
-)
+})
 ```
 
 ### Custom Error Messages
