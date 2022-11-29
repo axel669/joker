@@ -1,6 +1,6 @@
 {
   "name": "@axel669/joker",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "Library for doing schema validation and data masking",
   "main": "joker.mjs",
   "scripts": {

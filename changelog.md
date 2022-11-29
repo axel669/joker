@@ -1,3 +1,6 @@
+## 0.3.0
+- added masking
+
 ## 0.2.5
 - added wildcard key checks
 

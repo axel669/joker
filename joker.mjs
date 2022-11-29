@@ -1,4 +1,5 @@
 import validator from "./validate.mjs"
+import mask from "./mask.mjs"
 import { builtin, errors } from "./types.mjs"
 
 const extendTypes = (defs) => {
@@ -14,6 +15,7 @@ const extendErrors = (defs) => {
 
 export default {
     validator,
+    mask,
     extendTypes,
     extendErrors,
 }
