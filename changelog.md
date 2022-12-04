@@ -1,3 +1,6 @@
+## 0.3.1
+- reorganize files to not forget them in publishes anymore (hopefully)
+
 ## 0.3.0
 - added masking
 

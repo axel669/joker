@@ -1,6 +1,6 @@
-import validator from "./validate.mjs"
-import mask from "./mask.mjs"
-import { builtin, errors } from "./types.mjs"
+import validator from "./lib/validate.mjs"
+import mask from "./lib/mask.mjs"
+import { builtin, errors } from "./lib/types.mjs"
 
 const extendTypes = (defs) => {
     for (const [key, func] of Object.entries(defs)) {
