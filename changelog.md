@@ -1,3 +1,7 @@
+## 0.3.2
+- fixed a bug in double nested optional objects where top level nullable check
+    was looking at the wrong value
+
 ## 0.3.1
 - reorganize files to not forget them in publishes anymore (hopefully)
 

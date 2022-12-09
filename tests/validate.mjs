@@ -69,48 +69,56 @@ const data = [{
 // console.log(valid)
 
 {
+    // const schema = {
+    //     itemName: "obj",
+    //     "root": {
+    //         "?id": "number",
+    //         "wat": {"joker.type": "array", length: 2},
+    //         "wat[]": {
+    //             "joker.type": "conditional",
+    //             condition: (item) => item.name.length < 3 ? "a" : "b",
+    //             a: {
+    //                 "name": "string",
+    //                 "count": {"joker.type": "string", min: 5},
+    //                 "tags[]": "string"
+    //             },
+    //             b: {
+    //                 "name": {
+    //                     "joker.type": "string",
+    //                     format: /^\w+$/
+    //                 },
+    //                 "count": "number",
+    //             }
+    //         },
+    //         "?tags{}": "string",
+    //     }
+    // }
+    // const data = {
+    //     id: 100,
+    //     wat: [
+    //         { name: "hi", count: "0", tags: ["a", "b"] },
+    //         { name: "test", count: 10 },
+    //         { name: "another one", count: "0" },
+    //     ],
+    //     tags: {
+    //         random: "hi",
+    //         another: "wat",
+    //         fail: 100,
+    //     }
+    // }
     const schema = {
-        itemName: "obj",
-        "root": {
-            "?id": "number",
-            "wat": {"joker.type": "array", length: 2},
-            "wat[]": {
-                "joker.type": "conditional",
-                condition: (item) => item.name.length < 3 ? "a" : "b",
-                a: {
-                    "name": "string",
-                    "count": {"joker.type": "string", min: 5},
-                    "tags[]": "string"
-                },
-                b: {
-                    "name": {
-                        "joker.type": "string",
-                        format: /^\w+$/
-                    },
-                    "count": "number",
-                }
-            },
-            "?tags{}": "string",
-        }
-    }
-    const data = {
-        id: 100,
-        wat: [
-            { name: "hi", count: "0", tags: ["a", "b"] },
-            { name: "test", count: 10 },
-            { name: "another one", count: "0" },
-        ],
-        tags: {
-            random: "hi",
-            another: "wat",
-            fail: 100,
+        itemName: 'omphalos',
+        root: {
+            "?A": {
+                "?B": "string"
+            }
         }
     }
     const validate = joker.validator(schema)
 
     console.log(validate)
     // console.log(validate(null))
-    console.log(validate(data))
+    // console.log(validate(data))
 
     // const _valid = joker.validator(_schema)
     // console.log(_valid)
