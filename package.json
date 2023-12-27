@@ -1,11 +1,15 @@
 {
   "name": "@axel669/joker",
-  "version": "0.3.2",
+  "version": "0.3.3-beta.0",
   "description": "Library for doing schema validation and data masking",
+  "type": "module",
   "main": "joker.mjs",
   "scripts": {
     "test": "aegis tests/**/*.test.mjs",
     "benchmark": "node tests/benchmark.mjs"
+  },
+  "bin": {
+    "joker": "cli.js"
   },
   "repository": {
     "type": "git",
@@ -28,7 +32,11 @@
     "benchmark": "^2.1.4"
   },
   "files": [
+    "cli.js",
     "joker.mjs",
     "lib"
-  ]
+  ],
+  "dependencies": {
+    "jsonc-parser": "^3.2.0"
+  }
 }

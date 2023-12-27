@@ -136,3 +136,21 @@ joker.extendErrors({
     "string-number.nan": (path, isnan) => `${path} is${isnan ? " not" : ""} NaN`
 })
 ```
+
+## CLI Generator
+Joker includes a cli tool to generate importable files with masks and/or
+validators (mostly for use in environments like Cloudflare workers).
+
+### Options / Example
+
+| Option | Required | Description |
+| --- | --- | --- |
+| `--validator`, `-v` | yes* | Generates a validator file |
+| `--mask`, `-m` | yes* | Generates a mask file |
+| `---dest` | no | The output folder to save the generated files |
+
+* at least one of the output types is required
+
+```bash
+joker -vm --dest=folder file1.json file2.json
+```

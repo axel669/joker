@@ -1,0 +1,36 @@
+{
+    //  itemName can be used to customize the path reported by validation
+    //  errors. default is "item"
+    "itemName": "config",
+    //  root defines the top level the data
+    "root": {
+        //  use object syntax for object validation
+        //  with the key being the validator function to use
+        "id": "number",
+        //  start a key name with "?" to mark as nullable (can be null/undefined)
+        "?thing": "bool",
+        //  nested objects generate nested checks with the validator
+        "nested": {
+            "tagged": "bool"
+        },
+        //  keys with "[]" are checked as arrays, with each item using the
+        //  given schema for validation
+        "wat[]": {
+            "name": {
+                "joker.type": "string", "max": 20
+            },
+            "count": {
+                "joker.type": "number", "min": 5
+            },
+        },
+        //  an array marked with "[?]" allows individual items to be nullable
+        "tags[?]": {
+            "joker.type": "string", "length": 10
+        },
+        //  use {} to check that the values of all keys in an object are of the
+        //  right form
+        "funcs{}": {
+            "name": "string",
+        }
+    }
+}
