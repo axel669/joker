@@ -141,6 +141,9 @@ joker.extendErrors({
 Joker includes a cli tool to generate importable files with masks and/or
 validators (mostly for use in environments like Cloudflare workers).
 
+Source files should be jsonc (comments allowed \o/), but are otherwise identical
+to the normal joker schema expected by the functions.
+
 ### Options / Example
 
 | Option | Required | Description |
