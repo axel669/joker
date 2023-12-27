@@ -1,3 +1,16 @@
+## 0.3.2
+- fixed a bug in double nested optional objects where top level nullable check
+    was looking at the wrong value
+
+## 0.3.1
+- reorganize files to not forget them in publishes anymore (hopefully)
+
+## 0.3.0
+- added masking
+
+## 0.2.5
+- added wildcard key checks
+
 ## 0.2.4
 - added top level path name customization
 - added custom error messages for any type
