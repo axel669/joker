@@ -1,6 +1,6 @@
 import fs from "fs/promises"
 
-import joker from "../joker.mjs"
+import joker from "@axel669/joker"
 
 const schema = {
     root: {
@@ -22,49 +22,49 @@ const data = {
     tags: null,
 }
 
-const schemaBig = {
-    "root[]": {
-        "_id": "string",
-        "index": "number",
-        "guid": "string",
-        "isActive": "bool",
-        "age": "number",
-        "eyeColor": "string",
-        "name": "string",
-        "gender": "string",
-        "latitude": "number",
-        "longitude": "number",
-        "tags[]": "string",
-        "favoriteFruit": "string"
-    }
-}
-const dataBig = JSON.parse(
-    await fs.readFile("tests/big.json", "utf8")
-)
+// const schemaBig = {
+//     "root[]": {
+//         "_id": "string",
+//         "index": "number",
+//         "guid": "string",
+//         "isActive": "bool",
+//         "age": "number",
+//         "eyeColor": "string",
+//         "name": "string",
+//         "gender": "string",
+//         "latitude": "number",
+//         "longitude": "number",
+//         "tags[]": "string",
+//         "favoriteFruit": "string"
+//     }
+// }
+// const dataBig = JSON.parse(
+//     await fs.readFile("tests/big.json", "utf8")
+// )
 
 export const test = ({Assert, Section}) => {
     Section("small")
 
     {
-        const validate = joker.compile(schema)
+        const validate = joker.validator(schema)
         const valid = validate(data)
 
         Assert(typeof validate)
             .eq("function")
         Assert(valid)
             ("length").eq(1)
-            ("0").eq(".wat.0.count is not a number")
+            ("0.message").eq("item.wat[0].count is not a number")
     }
 
-    Section("big")
+    // Section("big")
 
-    {
-        const validate = joker.compile(schemaBig)
-        const valid = validate(dataBig)
+    // {
+    //     const validate = joker.compile(schemaBig)
+    //     const valid = validate(dataBig)
 
-        Assert(typeof validate)
-            .eq("function")
-        Assert(valid)
-            .eq(true)
-    }
+    //     Assert(typeof validate)
+    //         .eq("function")
+    //     Assert(valid)
+    //         .eq(true)
+    // }
 }

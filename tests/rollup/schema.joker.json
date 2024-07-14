@@ -1,0 +1,6 @@
+{
+    "root[]": {
+        "id": "number",
+        "?name": "string"
+    }
+}
