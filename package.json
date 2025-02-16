@@ -1,13 +1,13 @@
 {
   "name": "@axel669/joker",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Library for doing schema validation and data masking",
   "type": "module",
   "main": "joker.js",
   "type": "module",
   "scripts": {
     "test": "aegis tests/**/*.test.js",
-    "benchmark": "node tests/benchmark.mjs"
+    "test:rollup": "cd tests/rollup/ && rollup -c"
   },
   "bin": {
     "joker": "cli.js"

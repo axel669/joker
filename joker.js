@@ -1,6 +1,7 @@
-import validator from "./lib/validate.mjs"
-import mask from "./lib/mask.mjs"
-import { builtin, errors } from "./lib/types.mjs"
+import validator from "./lib/validate.js"
+import mask from "./lib/mask.js"
+import { builtin, errors } from "./lib/types.js"
+import closureValue from "./lib/closure-value.js"
 
 const extendTypes = (defs) => {
     for (const [key, func] of Object.entries(defs)) {
@@ -14,8 +15,8 @@ const extendErrors = (defs) => {
 }
 
 export default {
-    validator,
-    mask,
+    validator: (schema) => validator(schema, closureValue.func, "return"),
+    mask: (schema) => mask(schema, closureValue.func, "return"),
     extendTypes,
     extendErrors,
 }
