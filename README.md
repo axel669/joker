@@ -2,8 +2,7 @@
 Validation (and soon masking) library that is small, fast, and simple.
 
 ## TODO
-- ~~wildcard object keys?~~
-- maybe other stuff if people suggest it
+No ideas left, maybe its time for a 1.0 soon?
 
 ## Usage
 ```js
@@ -135,6 +134,39 @@ joker.extendErrors({
     "string-number.$": (path) => `${path} is not a string or a number`,
     "string-number.nan": (path, isnan) => `${path} is${isnan ? " not" : ""} NaN`
 })
+```
+
+## Rollup Plugin
+Joker includes a rollup plugin that can be used to precompile the schema into
+high speed validation/masking functions. The plugin allows you to import a
+`.joker.json` file that contains the schema. The file is parsed as jsonc so
+comments/trailing commas are allowed (I think you only need to put quotes on
+string if you copy-paste from code directly). The plugin generates both a mask
+and validate function that can be imported by name.
+
+```js
+import jokerRollup from "@axel669/joker/rollup-plugin"
+
+export default {
+    input: "./main.js",
+    output: {
+        file: "./out/test.js",
+        format: "esm"
+    },
+    plugins: [ jokerRollup ]
+}
+```
+
+```js
+import { validate as validateConfig } from "./config.joker.json"
+import * as postData from "./post-data.joker.json"
+
+if (validateConfig(config) !== true) {
+    // do something about invalid config
+}
+
+const validData = postData.validate(post)
+const masked = postData.mask(post)
 ```
 
 ## CLI Generator

@@ -1,3 +1,11 @@
+## 0.3.5
+- added mask cli + rollup generation
+- updated docs to include rollup plugin
+
+## 0.3.4
+- added cli generation
+- add rollup plugin
+
 ## 0.3.2
 - fixed a bug in double nested optional objects where top level nullable check
     was looking at the wrong value

@@ -1,4 +1,4 @@
-import joker from "../joker.mjs"
+import joker from "../joker.js"
 
 const schema = {
     "root[]": {
