@@ -3,9 +3,10 @@
   "version": "0.3.4",
   "description": "Library for doing schema validation and data masking",
   "type": "module",
-  "main": "joker.mjs",
+  "main": "joker.js",
+  "type": "module",
   "scripts": {
-    "test": "aegis tests/**/*.test.mjs",
+    "test": "aegis tests/**/*.test.js",
     "benchmark": "node tests/benchmark.mjs"
   },
   "bin": {
@@ -41,7 +42,7 @@
     "jsonc-parser": "^3.2.0"
   },
   "exports": {
-    ".": "./joker.mjs",
+    ".": "./joker.js",
     "./rollup-plugin": "./lib/rollup.js"
   }
 }
