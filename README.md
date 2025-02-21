@@ -4,6 +4,18 @@ Validation (and soon masking) library that is small, fast, and simple.
 ## TODO
 No ideas left, maybe its time for a 1.0 soon?
 
+## Installation
+
+### CLI
+```bash
+pnpm add @axel669/joker
+```
+
+### Browser
+```js
+import joker from "https://esm.sh/@axel669/joker"
+```
+
 ## Usage
 ```js
 import joker from "@axel669/joker"
