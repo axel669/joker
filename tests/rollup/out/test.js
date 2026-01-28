@@ -1,3 +1,68 @@
+const builtin = {
+    "array.$": item => Array.isArray(item) !== true,
+    "array.min": (item, value) => item.length < value,
+    "array.max": (item, value) => item.length > value,
+    "array.length": (item, value) => item.length !== value,
+
+    "object.$": item => typeof item !== "object" || item === null,
+
+    "string.$": item => typeof item !== "string",
+    "string.min": (item, value) => item.length < value,
+    "string.max": (item, value) => item.length > value,
+    "string.length": (item, value) => item.length !== value,
+    "string.format": (item, regex) => regex.test(item) === false,
+
+    "number.$": item => typeof item !== "number",
+    "number.min": (item, value) => item < value,
+    "number.max": (item, value) => item > value,
+
+    "int.$": item => typeof item !== "number" || (item % 1) !== 0,
+    "int.min": (item, value) => item < value,
+    "int.max": (item, value) => item > value,
+
+    "bool.$": item => typeof item !== "boolean",
+};
+
+const extendTypes = (defs) => {
+    for (const [key, func] of Object.entries(defs)) {
+        builtin[key] = builtin[key] ?? func;
+    }
+};
+const extendErrors = (defs) => {
+    for (const [key, func] of Object.entries(defs)) {
+    }
+};
+
+// stolen live on stream from OdatNurd
+/* Extend the types of values known to Joker validation.
+ *
+ * In the list, the validation functions should return true if the data is not
+ * valid and false if it is; or if you will, it is returning whether or not the
+ * validator should raise an error or not. */
+extendTypes({
+    // Validate that the nanoid is a string of the appropriate length and
+    // character composition.
+    "nanoid.$": (item) => true,
+});
+
+/* Extend the error messages that are reported for custom validations. */
+extendErrors({
+    // Generically, we can only tell if the naoid is valid or not.
+    "nanoid.$": (id) => `${id} is not a valid nanoid`,
+});
+
+extendTypes({
+    //  Define when the item is bad
+    //  typeName.$ is the base type validator that runs regardless of any params
+    //  that get passed in. typeName.paramName allows for validating custom
+    //  params on a type.
+    "string-number.$": (item) => (
+        typeof item !== "string"
+        && typeof string !== "number"
+    ),
+    "string-number.nan": (item, isnan) => isNaN(item) !== isnan
+});
+
 /*
 Schema
 {
@@ -36,20 +101,22 @@ Schema
         //  right form
         "funcs{}": {
             "name": "string",
-        }
+        },
+        "stolen": "nanoid"
     }
 }
 
 */
-const number_$ = item => typeof item !== "number";
-const bool_$ = item => typeof item !== "boolean";
-const string_$ = item => typeof item !== "string";
-const string_max = (item, value) => item.length > value;
+const number_$ = builtin["number.$"];
+const bool_$ = builtin["bool.$"];
+const string_$ = builtin["string.$"];
+const string_max = builtin["string.max"];
 const args0 = 20;
-const number_min = (item, value) => item < value;
+const number_min = builtin["number.min"];
 const args1 = 5;
-const string_length = (item, value) => item.length !== value;
+const string_length = builtin["string.length"];
 const args2 = 10;
+const nanoid_$ = builtin["nanoid.$"];
 const validate = (item) => {
     const errors = [];
     const item0 = item;
@@ -138,10 +205,12 @@ const validate = (item) => {
                 }
             }
         }
+        if (nanoid_$(item0.stolen)) {
+            errors.push({message: `config.stolen is not a valid nanoid`, type: "nanoid.$", path: `config.stolen`, value: item0.stolen});
+        }
     }
     return errors.length ? errors : true
 };
-
 const objValue0 = (source) => {
     if (source === null) {
         return null
@@ -174,6 +243,7 @@ const mask = (source) => {
              return source
         }),
         funcs: objValue0(source.funcs),
+        stolen: source.stolen,
     }
 };
 

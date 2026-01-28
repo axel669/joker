@@ -13,12 +13,12 @@ pnpm add @axel669/joker
 
 ### Browser
 ```js
-import joker from "https://esm.sh/@axel669/joker"
+import * as joker from "https://esm.sh/@axel669/joker"
 ```
 
 ## Usage
 ```js
-import joker from "@axel669/joker"
+import * as joker from "@axel669/joker"
 
 const validate = joker.validator(schema)
 console.log(
@@ -156,8 +156,19 @@ comments/trailing commas are allowed (I think you only need to put quotes on
 string if you copy-paste from code directly). The plugin generates both a mask
 and validate function that can be imported by name.
 
+> Internally the library will import some information from joker, so the
+> `@rollup/plugin-node-resolve` plugin must be included in the rollup config
+> for this plugin to work correctly.
+
+### Extensions
+The rollup plugin for joker can have a list of globs for automagically importing
+js files with type/error extensions into the compiled functions. The content of
+the files is not validated so if there are extra bits of code they will also be
+compiled into the output from this plugin.
+
 ```js
 import jokerRollup from "@axel669/joker/rollup-plugin"
+import resolve from "@rollup/plugin-node-resolve"
 
 export default {
     input: "./main.js",
@@ -165,7 +176,14 @@ export default {
         file: "./out/test.js",
         format: "esm"
     },
-    plugins: [ jokerRollup ]
+    plugins: [
+        resolve(),
+        jokerRollup({
+            extensions: [
+                "./extensions/**/*.js"
+            ]
+        })
+    ]
 }
 ```
 

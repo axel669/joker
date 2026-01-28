@@ -1,4 +1,5 @@
 import jokerRollup from "@axel669/joker/rollup-plugin"
+import resolve from "@rollup/plugin-node-resolve"
 
 export default {
     input: "./main.js",
@@ -6,5 +7,12 @@ export default {
         file: "./out/test.js",
         format: "esm"
     },
-    plugins: [ jokerRollup ]
+    plugins: [
+        resolve(),
+        jokerRollup({
+            extensions: [
+                "./ext/**/*.js"
+            ]
+        }),
+    ]
 }
