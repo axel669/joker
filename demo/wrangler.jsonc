@@ -1,0 +1,20 @@
+{
+    "name": "joker-demo",
+    "compatibility_date": "2025-07-05",
+    "main": "site.js",
+    "assets": {
+        "directory": ".",
+        "binding": "assets",
+        "not_found_handling": "single-page-application",
+    },
+    "env": {
+        "prod": {
+            "routes": [
+                {
+                    "pattern": "joker-demo.axel669.net",
+                    "custom_domain": true,
+                }
+            ]
+        }
+    }
+}
