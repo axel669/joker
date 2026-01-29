@@ -1,5 +1,5 @@
 # Joker
-Validation (and soon masking) library that is small, fast, and simple.
+Validation and masking library that is small, fast, and simple.
 
 ## TODO
 No ideas left, maybe its time for a 1.0 soon?
