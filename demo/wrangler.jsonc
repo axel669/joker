@@ -3,7 +3,7 @@
     "compatibility_date": "2025-07-05",
     "main": "site.js",
     "assets": {
-        "directory": ".",
+        "directory": "./site",
         "binding": "assets",
         "not_found_handling": "single-page-application",
     },
