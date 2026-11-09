@@ -191,7 +191,7 @@ export default {
 import { validate as validateConfig } from "./config.joker.json"
 import * as postData from "./post-data.joker.json"
 
-if (validateConfig(config) !== true) {
+if (validateConfig(config).length !== 0) {
     // do something about invalid config
 }
 

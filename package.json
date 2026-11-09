@@ -1,11 +1,11 @@
 {
   "name": "@axel669/joker",
-  "version": "0.3.6",
+  "version": "0.4.0",
   "description": "Library for doing schema validation and data masking",
   "type": "module",
   "main": "joker.js",
   "scripts": {
-    "test": "aegis tests/**/*.test.js",
+    "test": "aegis -c test/aegis.config.js",
     "test:rollup": "cd tests/rollup/ && rollup -c"
   },
   "bin": {
@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/axel669/joker#readme",
   "devDependencies": {
-    "@axel669/aegis": "^0.2.0",
+    "@axel669/aegis": "^0.4.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "ajv": "^8.11.0",
     "benchmark": "^2.1.4",
@@ -35,7 +35,7 @@
   },
   "files": [
     "cli.js",
-    "joker.mjs",
+    "joker.js",
     "lib"
   ],
   "dependencies": {

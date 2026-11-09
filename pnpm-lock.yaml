@@ -19,8 +19,8 @@ importers:
         version: 3.3.1
     devDependencies:
       '@axel669/aegis':
-        specifier: ^0.2.0
-        version: 0.2.8
+        specifier: ^0.4.0
+        version: 0.4.0
       '@rollup/plugin-node-resolve':
         specifier: ^16.0.3
         version: 16.0.3(rollup@4.57.0)
@@ -36,9 +36,12 @@ importers:
 
 packages:
 
-  '@axel669/aegis@0.2.8':
-    resolution: {integrity: sha512-pB1bOW1kfFsYCH0ue11+Obd8+1uwZGR8p21XcBfqd8MvV9bcs80WwMZ18PomUWssq6W03Ae1qt4h7O0Eq7NB0A==}
+  '@axel669/aegis@0.4.0':
+    resolution: {integrity: sha512-FPTbFhoj/LgVs9lp73ekS4O4pns2x5rHXQ2koJsgiPAaaJuQFOQKZysbHow+lf3Xu5tuBNNBWktl52giVlml/Q==}
     hasBin: true
+
+  '@axel669/result@0.2.1':
+    resolution: {integrity: sha512-M5ujNYsQaIv0I0uQrZTxSrFnaz9tt6IwoGRvwLE5c2MWPFvz7nlI9qzjChb1mGl5M7sL+pmshexDkjJoRsI9Hg==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -348,9 +351,12 @@ packages:
 
 snapshots:
 
-  '@axel669/aegis@0.2.8':
+  '@axel669/aegis@0.4.0':
     dependencies:
+      '@axel669/result': 0.2.1
       fast-glob: 3.3.3
+
+  '@axel669/result@0.2.1': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
